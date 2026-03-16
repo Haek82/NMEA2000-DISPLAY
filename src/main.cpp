@@ -28,10 +28,11 @@ static const uint16_t COL_RED      = 0xF0A2;  // #ef4444
 static const uint16_t COL_ORANGE   = 0xFCA0;  // #f59e0b
 static const uint16_t COL_BLUE     = 0x3B1F;  // #3b82f6
 static const uint16_t COL_CYAN     = 0x05F7;  // #06b6d4
+static const uint16_t COL_PURPLE   = 0xA55F;  // #a78bfa
 
 // --- Pages ---
-// Page 0 = overview, Page 1 = position detail, Pages 2..9 = instrument detail
-static const int NUM_PAGES = 10;  // overview + position + 8 instruments
+// Page 0 = overview, Page 1 = position detail, Pages 2..11 = instrument detail
+static const int NUM_PAGES = 12;  // overview + position + 10 instruments
 static int currentPage = 0;
 
 // --- State ---
@@ -45,6 +46,7 @@ struct NavState {
     float cog = 0, sog = 0, stw = 0, heading = 0;
     float depth = 0, depthOffset = 0;
     float aws = 0, awa = 0;
+    float tws = 0, twa = 0;
     float waterTemp = 0;
     int fixQuality = 0, sats = 0;
     float hdop = 0;
@@ -68,7 +70,7 @@ struct Instrument {
 };
 
 // We store pointers so values stay current; built in setup after nav is initialized
-static Instrument instruments[8];
+static Instrument instruments[10];
 
 static void buildInstruments() {
     instruments[0] = {"COG",     "\xB0T",  &nav.cog,       COL_ORANGE, 1};
@@ -78,7 +80,9 @@ static void buildInstruments() {
     instruments[4] = {"STW",     "kn",     &nav.stw,       COL_BLUE,   1};
     instruments[5] = {"AWS",     "kn",     &nav.aws,       COL_CYAN,   1};
     instruments[6] = {"AWA",     "\xB0",   &nav.awa,       COL_CYAN,   1};
-    instruments[7] = {"W.TEMP",  "\xB0" "C",  &nav.waterTemp, COL_GREEN,  1};
+    instruments[7] = {"TWS",     "kn",     &nav.tws,       COL_PURPLE, 1};
+    instruments[8] = {"TWA",     "\xB0",   &nav.twa,       COL_PURPLE, 1};
+    instruments[9] = {"W.TEMP",  "\xB0" "C",  &nav.waterTemp, COL_GREEN,  1};
 }
 
 // --- Formatters ---
@@ -118,10 +122,11 @@ static void drawStatusBar(bool stale, bool noData) {
     }
 
     // Page dots centered
-    int dotStartX = 160 - (NUM_PAGES * 5);
+    int dotSpacing = NUM_PAGES <= 10 ? 10 : 8;
+    int dotStartX = 160 - (NUM_PAGES * dotSpacing / 2);
     for (int i = 0; i < NUM_PAGES; i++) {
         uint16_t dotCol = (i == currentPage) ? COL_TEXT : COL_DIM;
-        sprite.fillCircle(dotStartX + i * 10, 7, 2, dotCol);
+        sprite.fillCircle(dotStartX + i * dotSpacing, 7, 2, dotCol);
     }
 
     // Connection status on right
@@ -381,6 +386,8 @@ static void onWsEvent(WStype_t type, uint8_t* payload, size_t length) {
                 nav.depthOffset = doc["depthOff"].as<float>();
                 nav.aws = doc["aws"].as<float>();
                 nav.awa = doc["awa"].as<float>();
+                nav.tws = doc["tws"].as<float>();
+                nav.twa = doc["twa"].as<float>();
                 nav.waterTemp = doc["wTemp"].as<float>();
                 nav.fixQuality = doc["fix"].as<int>();
                 nav.sats = doc["sats"].as<int>();

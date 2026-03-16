@@ -64,6 +64,7 @@
   .c-cyan   { color: #06b6d4; }
   .c-green  { color: #22c55e; }
   .c-red    { color: #ef4444; }
+  .c-purple { color: #a78bfa; }
   .c-dim    { color: #64748b; }
 
   .note { color: #64748b; font-size: 11px; margin-top: 16px; text-align: center; line-height: 1.6; }
@@ -139,7 +140,7 @@
 
 <div class="note">
   Touch <kbd>left half</kbd> = previous &nbsp;&middot;&nbsp; Touch <kbd>right half</kbd> = next &nbsp;&middot;&nbsp; or use <kbd>&larr;</kbd> <kbd>&rarr;</kbd> keys<br>
-  10 pages: Overview &rarr; Position &rarr; COG &rarr; SOG &rarr; HDG &rarr; DEPTH &rarr; STW &rarr; AWS &rarr; AWA &rarr; W.TEMP
+  12 pages: Overview &rarr; Position &rarr; COG &rarr; SOG &rarr; HDG &rarr; DEPTH &rarr; STW &rarr; AWS &rarr; AWA &rarr; TWS &rarr; TWA &rarr; W.TEMP
 </div>
 
 <script>
@@ -153,6 +154,8 @@ const pages = [
   { type: 'instrument', label: 'STW',    value: '5.9',   unit: 'kn',  colorClass: 'c-blue' },
   { type: 'instrument', label: 'AWS',    value: '12.4',  unit: 'kn',  colorClass: 'c-cyan' },
   { type: 'instrument', label: 'AWA',    value: '42.0',  unit: '°',   colorClass: 'c-cyan' },
+  { type: 'instrument', label: 'TWS',    value: '15.1',  unit: 'kn',  colorClass: 'c-purple' },
+  { type: 'instrument', label: 'TWA',    value: '38.0',  unit: '°',   colorClass: 'c-purple' },
   { type: 'instrument', label: 'W.TEMP', value: '18.2',  unit: '°C',  colorClass: 'c-green' },
 ];
 
