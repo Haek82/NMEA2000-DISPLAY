@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>NMEA2000 Nav Display Mockup — T-Display-S3 Touch</title>
+<style>
+  body { background: #1a1a2e; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; font-family: sans-serif; }
+  h2 { color: #94a3b8; font-size: 14px; margin-bottom: 12px; letter-spacing: 1px; }
+  .bezel { background: #111; border-radius: 12px; padding: 10px; box-shadow: 0 4px 24px rgba(0,0,0,.6); }
+  .screen {
+    width: 320px; height: 170px;
+    background: #0f172a;
+    position: relative;
+    font-family: 'Consolas', 'Courier New', monospace;
+    overflow: hidden;
+    border-radius: 3px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .touch-left, .touch-right { position: absolute; top: 0; width: 50%; height: 100%; z-index: 10; }
+  .touch-left  { left: 0; }
+  .touch-right { right: 0; }
+  .touch-left:active, .touch-right:active { background: rgba(255,255,255,0.03); }
+
+  .status-bar { position: absolute; top: 0; left: 0; width: 320px; height: 15px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; box-sizing: border-box; }
+  .page-label { font-size: 10px; color: #94a3b8; letter-spacing: 1px; }
+  .page-dots { display: flex; gap: 4px; position: absolute; left: 50%; transform: translateX(-50%); top: 4px; }
+  .dot { width: 5px; height: 5px; border-radius: 50%; background: #64748b; }
+  .dot.active { background: #f1f5f9; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; }
+  .sep { position: absolute; top: 15px; left: 4px; width: 312px; height: 1px; background: #1e293b; }
+
+  /* Overview */
+  .overview { position: absolute; top: 16px; left: 0; width: 320px; height: 154px; }
+  .pos-lat { position: absolute; top: 4px; left: 8px; font-size: 22px; color: #22c55e; }
+  .pos-lon { position: absolute; top: 30px; left: 8px; font-size: 22px; color: #22c55e; }
+  .fix-info { position: absolute; top: 4px; right: 8px; text-align: right; font-size: 12px; color: #64748b; line-height: 1.5; }
+  .grid-sep { position: absolute; top: 58px; left: 4px; width: 312px; height: 1px; background: #1e293b; }
+  .grid { position: absolute; top: 60px; left: 0; width: 320px; display: flex; }
+  .col { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; }
+  .col + .col { border-left: 1px solid #1e293b; }
+  .col-label { font-size: 10px; color: #94a3b8; margin-top: 2px; letter-spacing: 1px; }
+  .col-value { font-size: 28px; font-weight: bold; margin-top: 2px; }
+  .col-unit  { font-size: 11px; color: #64748b; margin-top: 1px; }
+
+  /* Position detail */
+  .pos-detail { position: absolute; top: 16px; left: 0; width: 320px; height: 154px; display: none; flex-direction: column; align-items: center; }
+  .pos-detail-label { font-size: 14px; color: #94a3b8; margin-top: 4px; letter-spacing: 1px; }
+  .pos-detail-lat { font-size: 36px; font-weight: bold; color: #22c55e; margin-top: 6px; }
+  .pos-detail-lon { font-size: 36px; font-weight: bold; color: #22c55e; margin-top: 6px; }
+  .pos-detail-fix { font-size: 12px; color: #64748b; margin-top: 10px; }
+
+  /* Instrument detail */
+  .detail { position: absolute; top: 16px; left: 0; width: 320px; height: 154px; display: none; flex-direction: column; align-items: center; }
+  .detail-label { font-size: 22px; color: #94a3b8; margin-top: 6px; }
+  .detail-value { font-size: 72px; font-weight: bold; margin-top: 4px; line-height: 1; }
+  .detail-unit  { font-size: 20px; color: #64748b; margin-top: 4px; }
+
+  .arrow-left  { position: absolute; left: 6px;  top: 50%; transform: translateY(-50%); font-size: 26px; color: #64748b; }
+  .arrow-right { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 26px; color: #64748b; }
+
+  .c-orange { color: #f59e0b; }
+  .c-blue   { color: #3b82f6; }
+  .c-cyan   { color: #06b6d4; }
+  .c-green  { color: #22c55e; }
+  .c-red    { color: #ef4444; }
+  .c-dim    { color: #64748b; }
+
+  .note { color: #64748b; font-size: 11px; margin-top: 16px; text-align: center; line-height: 1.6; }
+  .note kbd { background: #1e293b; padding: 2px 6px; border-radius: 3px; font-size: 11px; color: #94a3b8; border: 1px solid #334155; }
+</style>
+</head>
+<body>
+
+<h2>LilyGo T-Display-S3 Touch &mdash; 320 &times; 170 px</h2>
+
+<div class="bezel">
+  <div class="screen" id="screen">
+    <div class="touch-left" id="touchLeft"></div>
+    <div class="touch-right" id="touchRight"></div>
+
+    <div class="status-bar">
+      <span class="page-label" id="pageLabel">OVERVIEW</span>
+      <div class="page-dots" id="pageDots"></div>
+      <div class="status-dot"></div>
+    </div>
+    <div class="sep"></div>
+
+    <!-- Page 0: Overview -->
+    <div class="overview" id="overviewPage">
+      <div class="pos-lat">59°17.4532'N</div>
+      <div class="pos-lon">018°04.2156'E</div>
+      <div class="fix-info">3D 12Sat<br>H0.8</div>
+      <div class="grid-sep"></div>
+      <div class="grid">
+        <div class="col">
+          <div class="col-label">COG</div>
+          <div class="col-value c-orange">247.3</div>
+          <div class="col-unit">°T</div>
+        </div>
+        <div class="col">
+          <div class="col-label">SOG</div>
+          <div class="col-value c-blue">6.2</div>
+          <div class="col-unit">kn</div>
+        </div>
+        <div class="col">
+          <div class="col-label">HDG</div>
+          <div class="col-value c-cyan">245.8</div>
+          <div class="col-unit">°M</div>
+        </div>
+        <div class="col">
+          <div class="col-label">DEPTH</div>
+          <div class="col-value c-green">14.3</div>
+          <div class="col-unit">m</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page 1: Position detail -->
+    <div class="pos-detail" id="posDetailPage">
+      <div class="arrow-left">&lt;</div>
+      <div class="arrow-right">&gt;</div>
+      <div class="pos-detail-label">POSITION</div>
+      <div class="pos-detail-lat">59°17.4532'N</div>
+      <div class="pos-detail-lon">018°04.2156'E</div>
+      <div class="pos-detail-fix">3D  12Sat  HDOP 0.8</div>
+    </div>
+
+    <!-- Pages 2-9: Instrument detail -->
+    <div class="detail" id="detailPage">
+      <div class="arrow-left">&lt;</div>
+      <div class="arrow-right">&gt;</div>
+      <div class="detail-label" id="detailLabel">COG</div>
+      <div class="detail-value" id="detailValue">247.3</div>
+      <div class="detail-unit" id="detailUnit">°T</div>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  Touch <kbd>left half</kbd> = previous &nbsp;&middot;&nbsp; Touch <kbd>right half</kbd> = next &nbsp;&middot;&nbsp; or use <kbd>&larr;</kbd> <kbd>&rarr;</kbd> keys<br>
+  10 pages: Overview &rarr; Position &rarr; COG &rarr; SOG &rarr; HDG &rarr; DEPTH &rarr; STW &rarr; AWS &rarr; AWA &rarr; W.TEMP
+</div>
+
+<script>
+const pages = [
+  { type: 'overview' },
+  { type: 'position' },
+  { type: 'instrument', label: 'COG',    value: '247.3', unit: '°T',  colorClass: 'c-orange' },
+  { type: 'instrument', label: 'SOG',    value: '6.2',   unit: 'kn',  colorClass: 'c-blue' },
+  { type: 'instrument', label: 'HDG',    value: '245.8', unit: '°M',  colorClass: 'c-cyan' },
+  { type: 'instrument', label: 'DEPTH',  value: '14.3',  unit: 'm',   colorClass: 'c-green' },
+  { type: 'instrument', label: 'STW',    value: '5.9',   unit: 'kn',  colorClass: 'c-blue' },
+  { type: 'instrument', label: 'AWS',    value: '12.4',  unit: 'kn',  colorClass: 'c-cyan' },
+  { type: 'instrument', label: 'AWA',    value: '42.0',  unit: '°',   colorClass: 'c-cyan' },
+  { type: 'instrument', label: 'W.TEMP', value: '18.2',  unit: '°C',  colorClass: 'c-green' },
+];
+
+let current = 0;
+
+function buildDots() {
+  const c = document.getElementById('pageDots');
+  c.innerHTML = '';
+  for (let i = 0; i < pages.length; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === current ? ' active' : '');
+    c.appendChild(d);
+  }
+}
+
+function render() {
+  const overview = document.getElementById('overviewPage');
+  const posDetail = document.getElementById('posDetailPage');
+  const detail = document.getElementById('detailPage');
+  const label = document.getElementById('pageLabel');
+
+  overview.style.display = 'none';
+  posDetail.style.display = 'none';
+  detail.style.display = 'none';
+
+  buildDots();
+
+  const p = pages[current];
+
+  if (p.type === 'overview') {
+    label.textContent = 'OVERVIEW';
+    overview.style.display = 'block';
+  } else if (p.type === 'position') {
+    label.textContent = 'POSITION';
+    posDetail.style.display = 'flex';
+  } else {
+    label.textContent = p.label;
+    detail.style.display = 'flex';
+    document.getElementById('detailLabel').textContent = p.label;
+    const valEl = document.getElementById('detailValue');
+    valEl.textContent = p.value;
+    valEl.className = 'detail-value ' + p.colorClass;
+    document.getElementById('detailUnit').textContent = p.unit;
+  }
+}
+
+document.getElementById('touchLeft').addEventListener('click', () => {
+  current = (current - 1 + pages.length) % pages.length;
+  render();
+});
+document.getElementById('touchRight').addEventListener('click', () => {
+  current = (current + 1) % pages.length;
+  render();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft')  { current = (current - 1 + pages.length) % pages.length; render(); }
+  if (e.key === 'ArrowRight') { current = (current + 1) % pages.length; render(); }
+});
+
+render();
+</script>
+</body>
+</html>
